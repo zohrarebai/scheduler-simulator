@@ -223,7 +223,3 @@ listHistorics* priorityX (process * dummy,int nb){
    }
       return head;
 }
-
-
-
-   
