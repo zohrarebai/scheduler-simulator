@@ -1,9 +1,8 @@
-// main.c - Programme principal du simulateur d'ordonnancement
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include "parser.h"
+#include "algo_loader.h"
 
 int main(void) {
 
@@ -11,20 +10,19 @@ int main(void) {
     int arraySize = 0;
     int continueWithTheOldConfigFile;
 
-    // Initialiser le générateur de nombres aléatoires
     srand(time(NULL));
 
     printf("╔═══════════════════════════════════════════════════╗\n");
     printf("║   Simulateur d'Ordonnancement de Processus       ║\n");
     printf("╚═══════════════════════════════════════════════════╝\n\n");
 
-    // ===== Choix de l'utilisateur =====
-    printf("1: Continuer avec le fichier de configuration existant (process.txt)\n");
+
+    printf("1: Continuer avec le fichier de configuration existant (config.txt)\n");
     printf("2: Générer un nouveau fichier de configuration\n");
     printf(">> ");
     scanf("%d", &continueWithTheOldConfigFile);
 
-    // Validation du choix
+
     while (continueWithTheOldConfigFile > 2 || continueWithTheOldConfigFile < 1) {
         printf("Choix invalide ! Veuillez choisir 1 ou 2.\n");
         printf("1: Continuer avec le fichier existant\n");
@@ -33,13 +31,13 @@ int main(void) {
         scanf("%d", &continueWithTheOldConfigFile);
     }
 
-    // ===== Option 1: Utiliser le fichier existant =====
+
     if (continueWithTheOldConfigFile == 1) {
 
-        printf("\n📂 Chargement du fichier 'process.txt'...\n");
+        printf("\n📂 Chargement du fichier 'config/process.txt'...\n");
 
         if (parseConfigFile("config/process.txt", &pTab, &arraySize) == -1) {
-            fprintf(stderr, "\n❌ Erreur: Impossible de charger le fichier process.txt\n");
+            fprintf(stderr, "\n❌ Erreur: Impossible de charger le fichier config/process.txt\n");
             fprintf(stderr, "Assurez-vous que le fichier existe et est bien formaté.\n");
             return EXIT_FAILURE;
         }
@@ -47,7 +45,7 @@ int main(void) {
         printf("✅ %d processus chargés avec succès depuis config.txt\n\n", arraySize);
 
     }
-    // ===== Option 2: Générer un nouveau fichier =====
+
     else if (continueWithTheOldConfigFile == 2) {
 
         int nbProcesses;
@@ -56,14 +54,13 @@ int main(void) {
         int minP, maxP;
 
         printf("\n╔═══════════════════════════════════════════════════╗\n");
-        printf("║     Génération d'un nouveau fichier process       ║\n");
+        printf("║     Génération d'un nouveau fichier config       ║\n");
         printf("╚═══════════════════════════════════════════════════╝\n");
 
-        // Nombre de processus
+
         printf("\nEntrez le nombre de processus: ");
         scanf("%d", &nbProcesses);
 
-        // Temps d'arrivée (ta)
         printf("\n--- Configuration du temps d'arrivée (ta) ---\n");
         printf("Entrez le temps d'arrivée minimal: ");
         scanf("%d", &minTa);
@@ -76,7 +73,6 @@ int main(void) {
             scanf("%d", &maxTa);
         }
 
-        // Temps d'exécution (te)
         printf("\n--- Configuration du temps d'exécution (te) ---\n");
         printf("Entrez le temps d'exécution minimal: ");
         scanf("%d", &minTe);
@@ -89,7 +85,6 @@ int main(void) {
             scanf("%d", &maxTe);
         }
 
-        // Priorité
         printf("\n--- Configuration de la priorité ---\n");
         printf("Entrez la priorité minimale: ");
         scanf("%d", &minP);
@@ -102,8 +97,7 @@ int main(void) {
             scanf("%d", &maxP);
         }
 
-        // Génération du fichier
-        printf("\n🔄 Génération du fichier process.txt...\n");
+        printf("\n🔄 Génération du fichier config/process.txt...\n");
 
         if (generateConfigFile("config/process.txt", nbProcesses,
                                minTa, maxTa, minTe, maxTe, minP, maxP) == -1) {
@@ -111,9 +105,8 @@ int main(void) {
             return EXIT_FAILURE;
         }
 
-        printf("✅ Fichier process.txt généré avec succès!\n");
+        printf("✅ Fichier config/process.txt généré avec succès!\n");
 
-        // Charger le fichier nouvellement généré
         printf("📂 Chargement du fichier généré...\n");
 
         if (parseConfigFile("config/process.txt", &pTab, &arraySize) == -1) {
@@ -139,18 +132,37 @@ int main(void) {
     printf("╚═══════════╩═══════════╩═══════════════╩═══════════════════╝\n");
     printf("\n📊 Total: %d processus chargés\n", arraySize);
 
-    // ===== Section pour les algorithmes (à implémenter) =====
-    printf("\n╔═══════════════════════════════════════════════════╗\n");
-    printf("║      Sélection de l'algorithme d'ordonnancement   ║\n");
-    printf("╚═══════════════════════════════════════════════════╝\n");
-    printf("\n[INFO] Cette section sera implémentée prochainement.\n");
-    printf("Les algorithmes disponibles seront:\n");
-    printf("  1. FIFO\n");
-    printf("  3. Round Robin\n");
-    printf("  4. Priority\n");
-    printf("  5. Multilevel\n");
+    AlgorithmList algoList;
 
-    // ===== Libération de la mémoire =====
+    printf("\n🔍 Recherche des algorithmes disponibles...\n");
+
+    int algoCount = loadAvailableAlgorithms("src/algos", &algoList);
+
+    if (algoCount <= 0) {
+        fprintf(stderr, "❌ Aucun algorithme disponible.\n");
+        fprintf(stderr, "Assurez-vous que le dossier src/algos/ existe et contient des sous-dossiers.\n");
+        freeProcessArray(pTab);
+        return EXIT_FAILURE;
+    }
+
+    printf("✅ %d algorithme(s) détecté(s)\n", algoCount);
+
+    displayAlgorithmMenu(&algoList);
+
+    int selectedAlgo = getAlgorithmChoice(&algoList); //algo choisis par l'utilisateur et a faire
+
+    if (selectedAlgo == -1) {
+        printf("\n👋 Programme annulé par l'utilisateur.\n");
+        freeProcessArray(pTab);
+        return EXIT_SUCCESS;
+    }
+
+    printf("\n✅ Algorithme sélectionné: %s\n", algoList.algos[selectedAlgo].display_name);
+    printf("📁 Dossier: src/algos/%s/\n", algoList.algos[selectedAlgo].name);
+
+    //Exécuter l'algorithme sélectionné à faire
+    printf("\n[INFO] Exécution de l'algorithme (à implémenter)\n");
+
     freeProcessArray(pTab);
 
     printf("\n✅ Mémoire libérée. Fin du programme.\n");
