@@ -1,11 +1,10 @@
-#include "../queue/queue.h"
 #include "priority.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../historicsToDraw/historicsToDraw.h"
+#include "../../historicsToDraw/historicsToDraw.h"
 
 
 void enqueueV3(listPV2 **l, process p) {
