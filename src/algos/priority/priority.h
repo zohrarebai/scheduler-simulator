@@ -1,5 +1,4 @@
-#include "../queue/queue.h"
-#include "../historicsToDraw/historicsToDraw.h"
+#include "../../historicsToDraw/historicsToDraw.h"
 
 
 typedef struct listPV2
