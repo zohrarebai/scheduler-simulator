@@ -1,4 +1,4 @@
-#include "../../historicsToDraw/historicsToDraw.h"
+#include "../../Diagramme_Gantt/Diagramme.h"
 
 
 typedef struct listPV2

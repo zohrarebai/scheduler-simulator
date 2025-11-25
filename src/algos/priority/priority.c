@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../../historicsToDraw/historicsToDraw.h"
+#include "../../Diagramme_Gantt/Diagramme.h"
 
 
 void enqueueV3(listPV2 **l, process p) {
