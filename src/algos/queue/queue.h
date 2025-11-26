@@ -3,19 +3,15 @@
 
 #include <stdbool.h>
 #include <limits.h>
+#include "../../parser.h"
 
 #define EMPTY_QUEUE INT_MIN
 #include <stdbool.h>
 
 
-typedef struct process
-{
-	char name[10];
-	int ta;
-	int te ;
-	int priority ;
 
-} process;
+
+
 
 typedef struct node
 {
