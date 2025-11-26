@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h> 
 #include <time.h>
 #include "parser.h"
 #include "algo_loader.h"
+// Manual declaration of roundRobinX function
+void* roundRobinX(process *dummy, int nb, int qu);
 
 int main(void) {
 
@@ -161,8 +164,19 @@ int main(void) {
     printf("📁 Dossier: src/algos/%s/\n", algoList.algos[selectedAlgo].name);
 
     //Exécuter l'algorithme sélectionné à faire
-    printf("\n[INFO] Exécution de l'algorithme (à implémenter)\n");
+   
+     printf("DEBUG: selectedAlgo = %d\n", selectedAlgo);
+printf("DEBUG: Algorithm name = '%s'\n", algoList.algos[selectedAlgo].name);
+printf("DEBUG: Algorithm display_name = '%s'\n", algoList.algos[selectedAlgo].display_name);
+printf("DEBUG: Comparison result = %d\n", strcmp(algoList.algos[selectedAlgo].name, "Round Robin"));
 
+if (strcmp(algoList.algos[selectedAlgo].name, "Round Robin") == 0) {
+    int quantum = 2;
+    printf("\n[INFO] Exécution de Round Robin avec quantum = %d\n", quantum);
+    roundRobinX(pTab, arraySize, quantum);
+} else {
+    printf("\n[INFO] Algorithme %s pas encore implémenté\n", algoList.algos[selectedAlgo].name);
+}
     freeProcessArray(pTab);
 
     printf("\n✅ Mémoire libérée. Fin du programme.\n");

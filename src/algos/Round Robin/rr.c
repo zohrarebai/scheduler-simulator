@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include<string.h>
-
-
 int compareStructsv8(const void *a, const void *b) {
     return ((process*)a)->ta - ((process*)b)->ta;
 }
@@ -38,6 +36,12 @@ void  addNewCommingToQueuev8(queue *q,process *process,int time,int arraySize,li
 
 
 listHistorics* roundRobinX (process * dummy,int nb,int qu){
+  
+    printf("DEBUG: Received %d processes:\n", nb);
+    for(int i = 0; i < nb; i++) {
+        printf("  Process %d: name='%s', ta=%d, te=%d\n", 
+               i, dummy[i].name, dummy[i].ta, dummy[i].te);
+    }
 
   listHistorics* head=NULL;
 
@@ -82,8 +86,7 @@ listHistorics* roundRobinX (process * dummy,int nb,int qu){
        current.te = current.te -1 ;
         quantum ++;
         addNewCommingToQueuev8(&q,dummy,time+quantum,arraySize,&head);
-        printf("time %d s: process %s running \n",time+quantum,current.name);
-
+        printf("time %d s: process %s running \n", time+quantum, current.name);
      }
 
      if(current.te==0){
@@ -100,7 +103,7 @@ listHistorics* roundRobinX (process * dummy,int nb,int qu){
      }else{
         time+= quantum ;
         enqueue(&q,current);
-        printf("at %d : %s exit excution and back to queue",time,current.name);
+        printf("at %d : %s exit execution and back to queue\n", time, current.name);
            historicsToDraw processExitExcution ;
                   strcpy(processExitExcution.nameP, current.name);
                   processExitExcution.readyQueueOrRunning = 1;
