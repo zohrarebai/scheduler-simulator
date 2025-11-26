@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include<string.h>
-
-
 int compareStructsv8(const void *a, const void *b) {
     return ((process*)a)->ta - ((process*)b)->ta;
 }
