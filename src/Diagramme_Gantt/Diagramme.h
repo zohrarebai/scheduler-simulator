@@ -1,6 +1,8 @@
 #ifndef HISTORICSTODRAW_H
 #define HISTORICSTODRAW_H
-#include "../../algos/queue/queue.h"
+#include "../queue/queue.h"
+
+
 
 typedef struct historicsToDraw
 {
