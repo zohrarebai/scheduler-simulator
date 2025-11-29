@@ -1,4 +1,4 @@
-#include "../queue/queue.h"
+#include "../../queue/queue.h"
 #include "fifo.h"
 #include <stdio.h>
 #include <stdlib.h>

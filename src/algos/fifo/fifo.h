@@ -1,4 +1,4 @@
-#include "../queue/queue.h"
+#include "../../queue/queue.h"
 #include "../../Diagramme_Gantt/Diagramme.h"
 
 int compareStructs(const void *a, const void *b);
