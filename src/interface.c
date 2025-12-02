@@ -52,6 +52,80 @@ void copyProcessArray(process *source, process *destination, int size) {
     }
 }
 
+int ask_quantum_dialog(GtkWidget *parent_window, const char *algo_name) {
+    GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *label;
+    GtkWidget *entry;
+    GtkWidget *hbox;
+    gint result;
+    int quantum = 3; // Valeur par défaut
+
+    // Créer la boîte de dialogue
+    dialog = gtk_dialog_new_with_buttons(
+        "Paramètre Quantum",
+        GTK_WINDOW(parent_window),
+        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+        "_OK", GTK_RESPONSE_OK,
+        "_Annuler", GTK_RESPONSE_CANCEL,
+        NULL
+    );
+
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 350, 150);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_container_set_border_width(GTK_CONTAINER(content_area), 15);
+
+    // Créer le label
+    char label_text[200];
+    snprintf(label_text, sizeof(label_text),
+             "Entrez le quantum pour l'algorithme %s:", algo_name);
+    label = gtk_label_new(label_text);
+    gtk_box_pack_start(GTK_BOX(content_area), label, FALSE, FALSE, 10);
+
+    // Créer une boîte horizontale pour le champ de saisie
+    hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    gtk_box_pack_start(GTK_BOX(content_area), hbox, FALSE, FALSE, 10);
+
+    GtkWidget *quantum_label = gtk_label_new("Quantum:");
+    gtk_box_pack_start(GTK_BOX(hbox), quantum_label, FALSE, FALSE, 5);
+
+    // Créer le champ de saisie
+    entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry), "3"); // Valeur par défaut
+    gtk_entry_set_max_length(GTK_ENTRY(entry), 3);
+    gtk_entry_set_width_chars(GTK_ENTRY(entry), 5);
+    gtk_box_pack_start(GTK_BOX(hbox), entry, TRUE, TRUE, 5);
+
+    // Ajouter un label d'aide
+    GtkWidget *help_label = gtk_label_new("(Valeur recommandée: 2-5)");
+    gtk_widget_set_opacity(help_label, 0.7);
+    gtk_box_pack_start(GTK_BOX(content_area), help_label, FALSE, FALSE, 5);
+
+    gtk_widget_show_all(dialog);
+
+    // Afficher la boîte de dialogue et attendre la réponse
+    result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if (result == GTK_RESPONSE_OK) {
+        const char *text = gtk_entry_get_text(GTK_ENTRY(entry));
+        quantum = atoi(text);
+
+        // Validation : quantum doit être > 0
+        if (quantum <= 0) {
+            quantum = 3; // Retour à la valeur par défaut si invalide
+            printf("⚠️  Quantum invalide, utilisation de la valeur par défaut: 3\n");
+        } else {
+            printf("✅ Quantum défini: %d\n", quantum);
+        }
+    } else {
+        printf("ℹ️  Annulé, utilisation du quantum par défaut: 3\n");
+    }
+
+    gtk_widget_destroy(dialog);
+    return quantum;
+}
+
 // ===== Fonction de dessin du diagramme de Gantt (basée sur votre code) =====
 
 gboolean draw_gantt_diagram(GtkWidget *widget, cairo_t *cr, gpointer data) {
@@ -249,6 +323,7 @@ void execute_algorithm(AppData *app, int algo_index) {
 
     // Exécuter l'algorithme sélectionné
     const char *algo_name = app->algo_list.algos[algo_index].name;
+    int quantum = 3; // Valeur par défaut
 
     if (strcmp(algo_name, "fifo") == 0) {
         strcpy(app->current_algo_name, "FIFO");
@@ -256,7 +331,9 @@ void execute_algorithm(AppData *app, int algo_index) {
     }
     else if (strcmp(algo_name, "rr") == 0 || strcmp(algo_name, "Round Robin") == 0) {
         strcpy(app->current_algo_name, "Round Robin");
-        int quantum = 3; // Valeur par défaut
+        // 🆕 Demander le quantum à l'utilisateur
+        quantum = ask_quantum_dialog(app->window, "Round Robin");
+        printf("🔄 Exécution de Round Robin avec quantum = %d\n", quantum);
         app->current_data->list = roundRobinX(temp_processes, app->nb_processes, quantum);
     }
     else if (strcmp(algo_name, "priority") == 0) {
@@ -265,7 +342,9 @@ void execute_algorithm(AppData *app, int algo_index) {
     }
     else if (strcmp(algo_name, "multilevel") == 0 || strcmp(algo_name, "Multilevel") == 0) {
         strcpy(app->current_algo_name, "Multilevel");
-        int quantum = 3; // Quantum par défaut
+        // 🆕 Demander le quantum à l'utilisateur
+        quantum = ask_quantum_dialog(app->window, "Multilevel");
+        printf("📊 Exécution de Multilevel avec quantum = %d\n", quantum);
         app->current_data->list = multilevelX(temp_processes, app->nb_processes, quantum);
     }
     else {
@@ -309,8 +388,14 @@ void execute_algorithm(AppData *app, int algo_index) {
 
     // Mettre à jour le label d'info
     char info_text[200];
-    sprintf(info_text, "📊 Algorithme: %s | ⏱️ Temps total: %d | 💻 Processus: %d",
-            app->current_algo_name, app->finish_time, app->nb_processes);
+    if (strcmp(algo_name, "rr") == 0 || strcmp(algo_name, "Round Robin") == 0 ||
+        strcmp(algo_name, "multilevel") == 0 || strcmp(algo_name, "Multilevel") == 0) {
+        sprintf(info_text, "📊 Algorithme: %s (Quantum: %d) | ⏱️ Temps total: %d | 💻 Processus: %d",
+                app->current_algo_name, quantum, app->finish_time, app->nb_processes);
+        } else {
+            sprintf(info_text, "📊 Algorithme: %s | ⏱️ Temps total: %d | 💻 Processus: %d",
+                    app->current_algo_name, app->finish_time, app->nb_processes);
+        }
     gtk_label_set_text(GTK_LABEL(app->info_label), info_text);
 }
 
