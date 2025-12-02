@@ -47,7 +47,9 @@ void concatenateProcessNames(char *destination, const char *source) {
 void printQueue(listQueueState *head) {
     printf("Queue State\n");
     while (head != NULL) {
-        printf("at time :%d in queue there are processes: %s\n", head->val.nb,head->val.namesOfProcessess);
+        printf("at time :%d in queue there are processes: %s\n",
+        head->val.time,
+        head->val.namesOfProcessess);
         head = head->next;
     }
 }

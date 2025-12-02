@@ -1,5 +1,5 @@
 #include "../../Diagramme_Gantt/Diagramme.h"
-#include "../queue/queue.h"
+#include "../../queue/queue.h"
 #include <stdbool.h>
 
 
