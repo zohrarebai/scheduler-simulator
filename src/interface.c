@@ -5,7 +5,7 @@
 
 // Import des algorithmes
 #include "algos/fifo/fifo.h"
-#include "algos/Round Robin/rr.h"
+#include "algos/RoundRobin/rr.h"
 #include "algos/priority/priority.h"
 #include "algos/multilevel/multilevel.h"
 
@@ -329,11 +329,11 @@ void execute_algorithm(AppData *app, int algo_index) {
         strcpy(app->current_algo_name, "FIFO");
         app->current_data->list = fifoX(temp_processes, app->nb_processes);
     }
-    else if (strcmp(algo_name, "rr") == 0 || strcmp(algo_name, "Round Robin") == 0) {
-        strcpy(app->current_algo_name, "Round Robin");
+    else if (strcmp(algo_name, "rr") == 0 || strcmp(algo_name, "RoundRobin") == 0) {
+        strcpy(app->current_algo_name, "RoundRobin");
         // 🆕 Demander le quantum à l'utilisateur
-        quantum = ask_quantum_dialog(app->window, "Round Robin");
-        printf("🔄 Exécution de Round Robin avec quantum = %d\n", quantum);
+        quantum = ask_quantum_dialog(app->window, "RoundRobin");
+        printf("🔄 Exécution de RoundRobin avec quantum = %d\n", quantum);
         app->current_data->list = roundRobinX(temp_processes, app->nb_processes, quantum);
     }
     else if (strcmp(algo_name, "priority") == 0) {
@@ -388,7 +388,7 @@ void execute_algorithm(AppData *app, int algo_index) {
 
     // Mettre à jour le label d'info
     char info_text[200];
-    if (strcmp(algo_name, "rr") == 0 || strcmp(algo_name, "Round Robin") == 0 ||
+    if (strcmp(algo_name, "rr") == 0 || strcmp(algo_name, "RoundRobin") == 0 ||
         strcmp(algo_name, "multilevel") == 0 || strcmp(algo_name, "Multilevel") == 0) {
         sprintf(info_text, "📊 Algorithme: %s (Quantum: %d) | ⏱️ Temps total: %d | 💻 Processus: %d",
                 app->current_algo_name, quantum, app->finish_time, app->nb_processes);
