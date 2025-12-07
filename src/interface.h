@@ -26,13 +26,14 @@ typedef struct {
     GtkWidget *drawing_area;
     GtkWidget *scrolled_window;
     GtkWidget *info_label;
+    GtkWidget *process_table;
 
     // Données pour le diagramme de Gantt (utilise vos structures existantes)
     TwoInOne *current_data;  // Utilise votre structure TwoInOne
     char current_algo_name[50];
     int finish_time;
 } AppData;
-
+void update_process_table(AppData *app);
 // Fonction principale pour lancer l'interface
 void launch_gtk_interface(process *processes, int nb_processes,
                           AlgorithmList *algo_list, int argc, char *argv[]);

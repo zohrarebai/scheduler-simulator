@@ -641,6 +641,22 @@ void on_generate_config_clicked(GtkWidget *widget, gpointer data) {
         // Régénérer les couleurs
         generateProcessColors(app->processes, app->nb_processes);
 
+        // Récupérer le parent (scrolled window) avant de détruire
+        GtkWidget *table_scroll = gtk_widget_get_parent(app->process_table);
+
+        // Détruire l'ancien tableau
+        gtk_widget_destroy(app->process_table);
+
+        // Créer le nouveau tableau
+        app->process_table = NULL;
+        update_process_table(app);
+
+        // Ajouter le nouveau tableau au scrolled window
+        if (table_scroll != NULL) {
+            gtk_container_add(GTK_CONTAINER(table_scroll), app->process_table);
+            gtk_widget_show_all(table_scroll);
+        }
+
         // Message de succès
         GtkWidget *success_dialog = gtk_message_dialog_new(
             GTK_WINDOW(app->window),
@@ -710,6 +726,73 @@ void on_algorithm_button_clicked(GtkWidget *widget, gpointer data) {
     execute_algorithm(app, algo_index);
 }
 
+// ===== Fonction pour créer/mettre à jour le tableau des processus =====
+
+void update_process_table(AppData *app) {
+    // Si le tableau existe déjà, le détruire
+    if (app->process_table != NULL) {
+        gtk_widget_destroy(app->process_table);
+    }
+
+    // Créer un nouveau tableau (TreeView)
+    GtkListStore *store;
+    GtkTreeIter iter;
+    GtkWidget *tree_view;
+    GtkCellRenderer *renderer;
+    GtkTreeViewColumn *column;
+
+    // Créer le modèle de données (4 colonnes : Nom, Arrivée, Exécution, Priorité)
+    store = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT);
+
+    // Remplir le tableau avec les données
+    for (int i = 0; i < app->nb_processes; i++) {
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                          0, app->processes[i].name,
+                          1, app->processes[i].ta,
+                          2, app->processes[i].te,
+                          3, app->processes[i].priority,
+                          -1);
+    }
+
+    // Créer la vue du tableau
+    tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+    g_object_unref(store);
+
+    // Colonne 1 : Nom
+    renderer = gtk_cell_renderer_text_new();
+    column = gtk_tree_view_column_new_with_attributes("Nom", renderer, "text", 0, NULL);
+    gtk_tree_view_column_set_alignment(column, 0.5);
+    g_object_set(renderer, "xalign", 0.5, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+
+    // Colonne 2 : Arrivée
+    renderer = gtk_cell_renderer_text_new();
+    column = gtk_tree_view_column_new_with_attributes("Arrivée", renderer, "text", 1, NULL);
+    gtk_tree_view_column_set_alignment(column, 0.5);
+    g_object_set(renderer, "xalign", 0.5, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+
+    // Colonne 3 : Exécution
+    renderer = gtk_cell_renderer_text_new();
+    column = gtk_tree_view_column_new_with_attributes("Exécution", renderer, "text", 2, NULL);
+    gtk_tree_view_column_set_alignment(column, 0.5);
+    g_object_set(renderer, "xalign", 0.5, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+
+    // Colonne 4 : Priorité
+    renderer = gtk_cell_renderer_text_new();
+    column = gtk_tree_view_column_new_with_attributes("Priorité", renderer, "text", 3, NULL);
+    gtk_tree_view_column_set_alignment(column, 0.5);
+    g_object_set(renderer, "xalign", 0.5, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+
+    // Style du tableau
+    gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(tree_view), GTK_TREE_VIEW_GRID_LINES_BOTH);
+
+    app->process_table = tree_view;
+}
+
 // ===== Création de l'interface =====
 
 void create_interface(AppData *app) {
@@ -721,57 +804,102 @@ void create_interface(AppData *app) {
 
     // Conteneur vertical principal
     GtkWidget *main_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_container_set_border_width(GTK_CONTAINER(main_vbox), 15);
+    gtk_container_set_border_width(GTK_CONTAINER(main_vbox), 10);
     gtk_container_add(GTK_CONTAINER(app->window), main_vbox);
 
     // Titre
     GtkWidget *title_label = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(title_label),
-                         "<span font='22' weight='bold'>🖥️ Simulateur d'Ordonnancement de Processus</span>");
-    gtk_box_pack_start(GTK_BOX(main_vbox), title_label, FALSE, FALSE, 10);
+                         "<span font='15' weight='bold'>🖥️ Simulateur d'Ordonnancement de Processus</span>");
+    gtk_box_pack_start(GTK_BOX(main_vbox), title_label, FALSE, FALSE, 2);
 
     // Separator
     GtkWidget *separator1 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_box_pack_start(GTK_BOX(main_vbox), separator1, FALSE, FALSE, 5);
 
-    // Label pour les algorithmes
+    // ===== Section horizontale : Tableau + Algorithmes =====
+    GtkWidget *top_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 15);
+    gtk_box_pack_start(GTK_BOX(main_vbox), top_hbox, FALSE, FALSE, 5);
+
+    // === Partie gauche : Tableau des processus ===
+    GtkWidget *left_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_box_pack_start(GTK_BOX(top_hbox), left_vbox, TRUE, TRUE, 0);
+
+    GtkWidget *process_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(process_label),
+                         "<span font='12' weight='bold'>📋 Processus chargés:</span>");
+    gtk_widget_set_halign(process_label, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(left_vbox), process_label, FALSE, FALSE, 5);
+
+    // Frame pour le tableau
+    GtkWidget *table_frame = gtk_frame_new(NULL);
+    gtk_box_pack_start(GTK_BOX(left_vbox), table_frame, TRUE, TRUE, 0);
+
+    // ScrolledWindow pour le tableau
+    GtkWidget *table_scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(table_scroll),
+                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_widget_set_size_request(table_scroll, 400, 150);
+    gtk_container_add(GTK_CONTAINER(table_frame), table_scroll);
+
+    // Créer et ajouter le tableau
+    app->process_table = NULL;
+    update_process_table(app);
+    gtk_container_add(GTK_CONTAINER(table_scroll), app->process_table);
+
+    // === Partie droite : Algorithmes ===
+    GtkWidget *right_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_box_pack_start(GTK_BOX(top_hbox), right_vbox, TRUE, TRUE, 0);
+
     GtkWidget *algo_label = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(algo_label),
-                         "<span font='14' weight='bold'>📚 Algorithmes d'ordonnancement disponibles:</span>");
+                         "<span font='12' weight='bold'>📚 Algorithmes d'ordonnancement:</span>");
     gtk_widget_set_halign(algo_label, GTK_ALIGN_START);
-    gtk_box_pack_start(GTK_BOX(main_vbox), algo_label, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(right_vbox), algo_label, FALSE, FALSE, 5);
 
-    // Boîte horizontale pour les boutons d'algorithmes ET le bouton de génération
-    GtkWidget *button_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    gtk_box_pack_start(GTK_BOX(main_vbox), button_hbox, FALSE, FALSE, 5);
+    // Frame pour les algorithmes
+    GtkWidget *algo_frame = gtk_frame_new(NULL);
+    gtk_box_pack_start(GTK_BOX(right_vbox), algo_frame, TRUE, TRUE, 0);
+
+    GtkWidget *algo_inner_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_container_set_border_width(GTK_CONTAINER(algo_inner_vbox), 10);
+    gtk_container_add(GTK_CONTAINER(algo_frame), algo_inner_vbox);
 
     // Boîte pour les boutons d'algorithmes
-    app->algo_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    gtk_box_pack_start(GTK_BOX(button_hbox), app->algo_box, FALSE, FALSE, 0);
+    app->algo_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    gtk_box_pack_start(GTK_BOX(algo_inner_vbox), app->algo_box, FALSE, FALSE, 0);
 
-    // Créer les boutons pour chaque algorithme
+    // Créer les boutons pour chaque algorithme (3 par ligne)
+    GtkWidget *current_hbox = NULL;
     for (int i = 0; i < app->algo_list.count; i++) {
+        // Créer une nouvelle ligne tous les 3 boutons
+        if (i % 3 == 0) {
+            current_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+            gtk_box_pack_start(GTK_BOX(app->algo_box), current_hbox, FALSE, FALSE, 0);
+        }
+
         GtkWidget *button = gtk_button_new_with_label(app->algo_list.algos[i].display_name);
+        gtk_widget_set_size_request(button, 120, 30);
 
         GtkStyleContext *context = gtk_widget_get_style_context(button);
         gtk_style_context_add_class(context, "suggested-action");
 
         g_object_set_data(G_OBJECT(button), "algo_index", GINT_TO_POINTER(i));
         g_signal_connect(button, "clicked", G_CALLBACK(on_algorithm_button_clicked), app);
-        gtk_box_pack_start(GTK_BOX(app->algo_box), button, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(current_hbox), button, TRUE, TRUE, 0);
     }
 
-    // Spacer pour pousser le bouton de génération à droite
-    GtkWidget *spacer = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_box_pack_start(GTK_BOX(button_hbox), spacer, TRUE, TRUE, 0);
+    // Separator dans la section droite
+    GtkWidget *separator_algo = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_box_pack_start(GTK_BOX(algo_inner_vbox), separator_algo, FALSE, FALSE, 10);
 
     // Bouton de génération de fichier
     GtkWidget *generate_button = gtk_button_new_with_label("📄 Générer nouveau fichier");
+    gtk_widget_set_size_request(generate_button, -1, 20);
     GtkStyleContext *gen_context = gtk_widget_get_style_context(generate_button);
     gtk_style_context_add_class(gen_context, "destructive-action");
     g_signal_connect(generate_button, "clicked", G_CALLBACK(on_generate_config_clicked), app);
-    gtk_box_pack_start(GTK_BOX(button_hbox), generate_button, FALSE, FALSE, 0);
-
+    gtk_box_pack_start(GTK_BOX(algo_inner_vbox), generate_button, FALSE, FALSE, 0);
 
     // Separator
     GtkWidget *separator2 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
