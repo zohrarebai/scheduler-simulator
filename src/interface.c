@@ -275,9 +275,9 @@ gboolean draw_gantt_diagram(GtkWidget *widget, cairo_t *cr, gpointer data) {
     printf("21. Fin traitement queue\n");
 
     // Afficher le nom de l'algorithme
-    cairo_set_font_size(cr, 30);
+    cairo_set_font_size(cr, 25);
     gdk_cairo_set_source_rgba(cr, &(GdkRGBA){0, 0, 0, 1});
-    cairo_move_to(cr, 100, 350);
+    cairo_move_to(cr, marge, 30);
     cairo_show_text(cr, app->current_algo_name);
 
     printf("22. FIN draw_gantt_diagram (succès)\n\n");
@@ -397,6 +397,184 @@ void execute_algorithm(AppData *app, int algo_index) {
                     app->current_algo_name, app->finish_time, app->nb_processes);
         }
     gtk_label_set_text(GTK_LABEL(app->info_label), info_text);
+}
+// ===== Calcul des métriques =====
+
+typedef struct {
+    char name[50];
+    int waiting_time;      // Temps d'attente
+    int turnaround_time;   // Temps de rotation
+} ProcessMetrics;
+
+void calculate_metrics(AppData *app, ProcessMetrics **metrics, int *count) {
+    if (app->current_data == NULL || app->current_data->list == NULL) {
+        *metrics = NULL;
+        *count = 0;
+        return;
+    }
+
+    *count = app->nb_processes;
+    *metrics = malloc(app->nb_processes * sizeof(ProcessMetrics));
+
+    // Initialiser les métriques
+    for (int i = 0; i < app->nb_processes; i++) {
+        strcpy((*metrics)[i].name, app->processes[i].name);
+        (*metrics)[i].waiting_time = 0;
+        (*metrics)[i].turnaround_time = 0;
+    }
+
+    // Parcourir la liste historique pour calculer les métriques
+    for (int i = 0; i < app->nb_processes; i++) {
+        int arrival_time = app->processes[i].ta;
+        int execution_time = app->processes[i].te;
+        int start_time = -1;
+        int end_time = -1;
+        int total_execution = 0;
+
+        listHistorics *current = app->current_data->list;
+        while (current != NULL) {
+            if (strcmp(current->val.nameP, app->processes[i].name) == 0) {
+                // Premier démarrage
+                if (current->val.readyQueueOrRunning == 1 && current->val.enterOrExit == 0) {
+                    if (start_time == -1) {
+                        start_time = current->val.time;
+                    }
+                }
+                // Fin du processus
+                if (current->val.readyQueueOrRunning == 1 && current->val.enterOrExit == 2) {
+                    end_time = current->val.time;
+                }
+            }
+            current = current->next;
+        }
+
+        if (start_time != -1 && end_time != -1) {
+            // Temps de rotation = Temps de fin - Temps d'arrivée
+            (*metrics)[i].turnaround_time = end_time - arrival_time;
+            // Temps d'attente = Temps de rotation - Temps d'exécution
+            (*metrics)[i].waiting_time = (*metrics)[i].turnaround_time - execution_time;
+        }
+    }
+}
+
+void show_metrics_dialog(GtkWidget *widget, gpointer data) {
+    AppData *app = (AppData *)data;
+
+    if (app->current_data == NULL || app->current_data->list == NULL) {
+        GtkWidget *error_dialog = gtk_message_dialog_new(
+            GTK_WINDOW(app->window),
+            GTK_DIALOG_MODAL,
+            GTK_MESSAGE_WARNING,
+            GTK_BUTTONS_OK,
+            "Veuillez d'abord exécuter un algorithme pour voir les métriques"
+        );
+        gtk_dialog_run(GTK_DIALOG(error_dialog));
+        gtk_widget_destroy(error_dialog);
+        return;
+    }
+
+    // Calculer les métriques
+    ProcessMetrics *metrics;
+    int count;
+    calculate_metrics(app, &metrics, &count);
+
+    // Créer la boîte de dialogue
+    GtkWidget *dialog = gtk_dialog_new_with_buttons(
+        "📊 Métriques de Performance",
+        GTK_WINDOW(app->window),
+        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+        "_Fermer", GTK_RESPONSE_CLOSE,
+        NULL
+    );
+
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 600, 400);
+
+    GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_container_set_border_width(GTK_CONTAINER(content_area), 15);
+
+    // Titre
+    GtkWidget *title = gtk_label_new(NULL);
+    char title_text[200];
+    snprintf(title_text, sizeof(title_text),
+             "<span font='16' weight='bold'>Métriques pour l'algorithme: %s</span>",
+             app->current_algo_name);
+    gtk_label_set_markup(GTK_LABEL(title), title_text);
+    gtk_box_pack_start(GTK_BOX(content_area), title, FALSE, FALSE, 10);
+
+    // Créer le tableau des métriques
+    GtkListStore *store = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT);
+    GtkTreeIter iter;
+
+    double avg_waiting = 0;
+    double avg_turnaround = 0;
+
+    for (int i = 0; i < count; i++) {
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                          0, metrics[i].name,
+                          1, metrics[i].waiting_time,
+                          2, metrics[i].turnaround_time,
+                          -1);
+        avg_waiting += metrics[i].waiting_time;
+        avg_turnaround += metrics[i].turnaround_time;
+    }
+
+    avg_waiting /= count;
+    avg_turnaround /= count;
+
+    // Créer la vue du tableau
+    GtkWidget *tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+    g_object_unref(store);
+
+    // Colonne 1 : Processus
+    GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+    GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(
+        "Processus", renderer, "text", 0, NULL);
+    gtk_tree_view_column_set_alignment(column, 0.5);
+    g_object_set(renderer, "xalign", 0.5, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+
+    // Colonne 2 : Temps d'attente
+    renderer = gtk_cell_renderer_text_new();
+    column = gtk_tree_view_column_new_with_attributes(
+        "Temps d'attente (TA)", renderer, "text", 1, NULL);
+    gtk_tree_view_column_set_alignment(column, 0.5);
+    g_object_set(renderer, "xalign", 0.5, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+
+    // Colonne 3 : Temps de rotation
+    renderer = gtk_cell_renderer_text_new();
+    column = gtk_tree_view_column_new_with_attributes(
+        "Temps de rotation (TR)", renderer, "text", 2, NULL);
+    gtk_tree_view_column_set_alignment(column, 0.5);
+    g_object_set(renderer, "xalign", 0.5, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+
+    gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(tree_view), GTK_TREE_VIEW_GRID_LINES_BOTH);
+
+    // ScrolledWindow pour le tableau
+    GtkWidget *scrolled = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
+                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_container_add(GTK_CONTAINER(scrolled), tree_view);
+    gtk_box_pack_start(GTK_BOX(content_area), scrolled, TRUE, TRUE, 10);
+
+    // Afficher les moyennes
+    GtkWidget *avg_label = gtk_label_new(NULL);
+    char avg_text[300];
+    snprintf(avg_text, sizeof(avg_text),
+             "<span font='12'><b>📈 Moyennes:</b>  "
+             "Temps d'attente moyen: <b>%.2f</b>  |  "
+             "Temps de rotation moyen: <b>%.2f</b></span>",
+             avg_waiting, avg_turnaround);
+    gtk_label_set_markup(GTK_LABEL(avg_label), avg_text);
+    gtk_box_pack_start(GTK_BOX(content_area), avg_label, FALSE, FALSE, 10);
+
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+
+    free(metrics);
 }
 
 // ===== Callback pour générer un nouveau fichier =====
@@ -893,13 +1071,39 @@ void create_interface(AppData *app) {
     GtkWidget *separator_algo = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_box_pack_start(GTK_BOX(algo_inner_vbox), separator_algo, FALSE, FALSE, 10);
 
-    // Bouton de génération de fichier
-    GtkWidget *generate_button = gtk_button_new_with_label("📄 Générer nouveau fichier");
-    gtk_widget_set_size_request(generate_button, -1, 20);
+    // Boîte horizontale pour les deux boutons
+    GtkWidget *action_buttons_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_box_pack_start(GTK_BOX(algo_inner_vbox), action_buttons_hbox, FALSE, FALSE, 0);
+
+    // Bouton des métriques avec couleur personnalisée
+    GtkWidget *metrics_button = gtk_button_new_with_label("📊 Métriques");
+    gtk_widget_set_size_request(metrics_button, -1, 40);
+
+    // Appliquer un style CSS personnalisé
+    GtkCssProvider *css_provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(css_provider,
+        "button { background: orange; color: white; border: none; }", -1, NULL);
+    GtkStyleContext *metrics_context = gtk_widget_get_style_context(metrics_button);
+    gtk_style_context_add_provider(metrics_context,
+        GTK_STYLE_PROVIDER(css_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+
+    g_signal_connect(metrics_button, "clicked", G_CALLBACK(show_metrics_dialog), app);
+    gtk_box_pack_start(GTK_BOX(action_buttons_hbox), metrics_button, TRUE, TRUE, 0);
+
+    // Bouton de génération de fichier avec couleur turquoise
+    GtkWidget *generate_button = gtk_button_new_with_label("📄 Générer fichier");
+    gtk_widget_set_size_request(generate_button, -1, 40);
+
+    GtkCssProvider *gen_css_provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(gen_css_provider,
+        "button { background-image: linear-gradient(to bottom, #00bcd4, #0097a7); "
+        "color: white; border: none; }", -1, NULL);
     GtkStyleContext *gen_context = gtk_widget_get_style_context(generate_button);
-    gtk_style_context_add_class(gen_context, "destructive-action");
+    gtk_style_context_add_provider(gen_context,
+        GTK_STYLE_PROVIDER(gen_css_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+
     g_signal_connect(generate_button, "clicked", G_CALLBACK(on_generate_config_clicked), app);
-    gtk_box_pack_start(GTK_BOX(algo_inner_vbox), generate_button, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(action_buttons_hbox), generate_button, TRUE, TRUE, 0);
 
     // Separator
     GtkWidget *separator2 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
