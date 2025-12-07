@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     launch_gtk_interface(pTab, arraySize, &algo_list, argc, argv);
 
     // ===== Libérer la mémoire =====
-    freeProcessArray(pTab);
+    // freeProcessArray(pTab);
 
     printf("\n✅ Programme terminé\n");
     printf("Au revoir! ♥\n");

@@ -399,6 +399,307 @@ void execute_algorithm(AppData *app, int algo_index) {
     gtk_label_set_text(GTK_LABEL(app->info_label), info_text);
 }
 
+// ===== Callback pour générer un nouveau fichier =====
+
+void on_generate_config_clicked(GtkWidget *widget, gpointer data) {
+    AppData *app = (AppData *)data;
+
+    GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *grid;
+    GtkWidget *label;
+    GtkWidget *entry_nb, *entry_ta_min, *entry_ta_max;
+    GtkWidget *entry_te_min, *entry_te_max, *entry_p_min, *entry_p_max;
+    gint result;
+
+    // Créer la boîte de dialogue
+    dialog = gtk_dialog_new_with_buttons(
+        "Génération de fichier de configuration",
+        GTK_WINDOW(app->window),
+        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+        "_Générer", GTK_RESPONSE_OK,
+        "_Annuler", GTK_RESPONSE_CANCEL,
+        NULL
+    );
+
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 450, 400);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_container_set_border_width(GTK_CONTAINER(content_area), 15);
+
+    // Titre
+    GtkWidget *title = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(title),
+                         "<span font='14' weight='bold'>📄 Générer un nouveau fichier process.txt</span>");
+    gtk_box_pack_start(GTK_BOX(content_area), title, FALSE, FALSE, 10);
+
+    // Grille pour les champs de saisie
+    grid = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+    gtk_box_pack_start(GTK_BOX(content_area), grid, TRUE, TRUE, 10);
+
+    int row = 0;
+
+    // Nombre de processus
+    label = gtk_label_new("Nombre de processus:");
+    gtk_widget_set_halign(label, GTK_ALIGN_END);
+    gtk_grid_attach(GTK_GRID(grid), label, 0, row, 1, 1);
+
+    entry_nb = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry_nb), "5");
+    gtk_entry_set_width_chars(GTK_ENTRY(entry_nb), 10);
+    gtk_grid_attach(GTK_GRID(grid), entry_nb, 1, row, 2, 1);
+    row++;
+
+    // Séparateur
+    GtkWidget *sep1 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_grid_attach(GTK_GRID(grid), sep1, 0, row, 3, 1);
+    row++;
+
+    // Temps d'arrivée
+    GtkWidget *ta_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(ta_label), "<b>Temps d'arrivée (ta)</b>");
+    gtk_widget_set_halign(ta_label, GTK_ALIGN_START);
+    gtk_grid_attach(GTK_GRID(grid), ta_label, 0, row, 3, 1);
+    row++;
+
+    label = gtk_label_new("  Minimum:");
+    gtk_widget_set_halign(label, GTK_ALIGN_END);
+    gtk_grid_attach(GTK_GRID(grid), label, 0, row, 1, 1);
+
+    entry_ta_min = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry_ta_min), "0");
+    gtk_entry_set_width_chars(GTK_ENTRY(entry_ta_min), 10);
+    gtk_grid_attach(GTK_GRID(grid), entry_ta_min, 1, row, 1, 1);
+
+    label = gtk_label_new("Maximum:");
+    gtk_widget_set_halign(label, GTK_ALIGN_END);
+    gtk_grid_attach(GTK_GRID(grid), label, 2, row, 1, 1);
+
+    entry_ta_max = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry_ta_max), "10");
+    gtk_entry_set_width_chars(GTK_ENTRY(entry_ta_max), 10);
+    gtk_grid_attach(GTK_GRID(grid), entry_ta_max, 3, row, 1, 1);
+    row++;
+
+    // Séparateur
+    GtkWidget *sep2 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_grid_attach(GTK_GRID(grid), sep2, 0, row, 3, 1);
+    row++;
+
+    // Temps d'exécution
+    GtkWidget *te_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(te_label), "<b>Temps d'exécution (te)</b>");
+    gtk_widget_set_halign(te_label, GTK_ALIGN_START);
+    gtk_grid_attach(GTK_GRID(grid), te_label, 0, row, 3, 1);
+    row++;
+
+    label = gtk_label_new("  Minimum:");
+    gtk_widget_set_halign(label, GTK_ALIGN_END);
+    gtk_grid_attach(GTK_GRID(grid), label, 0, row, 1, 1);
+
+    entry_te_min = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry_te_min), "2");
+    gtk_entry_set_width_chars(GTK_ENTRY(entry_te_min), 10);
+    gtk_grid_attach(GTK_GRID(grid), entry_te_min, 1, row, 1, 1);
+
+    label = gtk_label_new("Maximum:");
+    gtk_widget_set_halign(label, GTK_ALIGN_END);
+    gtk_grid_attach(GTK_GRID(grid), label, 2, row, 1, 1);
+
+    entry_te_max = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry_te_max), "8");
+    gtk_entry_set_width_chars(GTK_ENTRY(entry_te_max), 10);
+    gtk_grid_attach(GTK_GRID(grid), entry_te_max, 3, row, 1, 1);
+    row++;
+
+    // Séparateur
+    GtkWidget *sep3 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_grid_attach(GTK_GRID(grid), sep3, 0, row, 3, 1);
+    row++;
+
+    // Priorité
+    GtkWidget *p_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(p_label), "<b>Priorité</b>");
+    gtk_widget_set_halign(p_label, GTK_ALIGN_START);
+    gtk_grid_attach(GTK_GRID(grid), p_label, 0, row, 3, 1);
+    row++;
+
+    label = gtk_label_new("  Minimum:");
+    gtk_widget_set_halign(label, GTK_ALIGN_END);
+    gtk_grid_attach(GTK_GRID(grid), label, 0, row, 1, 1);
+
+    entry_p_min = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry_p_min), "1");
+    gtk_entry_set_width_chars(GTK_ENTRY(entry_p_min), 10);
+    gtk_grid_attach(GTK_GRID(grid), entry_p_min, 1, row, 1, 1);
+
+    label = gtk_label_new("Maximum:");
+    gtk_widget_set_halign(label, GTK_ALIGN_END);
+    gtk_grid_attach(GTK_GRID(grid), label, 2, row, 1, 1);
+
+    entry_p_max = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry_p_max), "5");
+    gtk_entry_set_width_chars(GTK_ENTRY(entry_p_max), 10);
+    gtk_grid_attach(GTK_GRID(grid), entry_p_max, 3, row, 1, 1);
+    row++;
+
+    // Note d'information
+    GtkWidget *info_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(info_label),
+                         "<span size='small' foreground='#666'>ℹ️  Le fichier sera généré dans <b>config/process.txt</b></span>");
+    gtk_box_pack_start(GTK_BOX(content_area), info_label, FALSE, FALSE, 5);
+
+    gtk_widget_show_all(dialog);
+
+    // Afficher la boîte de dialogue
+    result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if (result == GTK_RESPONSE_OK) {
+        // Récupérer les valeurs
+        int nb = atoi(gtk_entry_get_text(GTK_ENTRY(entry_nb)));
+        int ta_min = atoi(gtk_entry_get_text(GTK_ENTRY(entry_ta_min)));
+        int ta_max = atoi(gtk_entry_get_text(GTK_ENTRY(entry_ta_max)));
+        int te_min = atoi(gtk_entry_get_text(GTK_ENTRY(entry_te_min)));
+        int te_max = atoi(gtk_entry_get_text(GTK_ENTRY(entry_te_max)));
+        int p_min = atoi(gtk_entry_get_text(GTK_ENTRY(entry_p_min)));
+        int p_max = atoi(gtk_entry_get_text(GTK_ENTRY(entry_p_max)));
+
+        // Validation
+        if (nb <= 0 || nb > 100) {
+            GtkWidget *error_dialog = gtk_message_dialog_new(
+                GTK_WINDOW(app->window),
+                GTK_DIALOG_MODAL,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "Nombre de processus invalide (doit être entre 1 et 100)"
+            );
+            gtk_dialog_run(GTK_DIALOG(error_dialog));
+            gtk_widget_destroy(error_dialog);
+            gtk_widget_destroy(dialog);
+            return;
+        }
+
+        if (ta_min > ta_max || te_min > te_max || p_min > p_max) {
+            GtkWidget *error_dialog = gtk_message_dialog_new(
+                GTK_WINDOW(app->window),
+                GTK_DIALOG_MODAL,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "Les valeurs minimales doivent être inférieures ou égales aux maximales"
+            );
+            gtk_dialog_run(GTK_DIALOG(error_dialog));
+            gtk_widget_destroy(error_dialog);
+            gtk_widget_destroy(dialog);
+            return;
+        }
+
+        // Générer le fichier
+        printf("\n🔄 Génération du fichier config/process.txt...\n");
+
+        if (generateConfigFile("config/process.txt", nb,
+                               ta_min, ta_max, te_min, te_max, p_min, p_max) == -1) {
+            GtkWidget *error_dialog = gtk_message_dialog_new(
+                GTK_WINDOW(app->window),
+                GTK_DIALOG_MODAL,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "Erreur lors de la génération du fichier"
+            );
+            gtk_dialog_run(GTK_DIALOG(error_dialog));
+            gtk_widget_destroy(error_dialog);
+            gtk_widget_destroy(dialog);
+            return;
+        }
+
+        printf("✅ Fichier généré avec succès!\n");
+
+        // Libérer l'ancien tableau
+        if (app->processes != NULL) {
+            free(app->processes);
+			app->processes = NULL;
+        }
+
+        // Charger le nouveau fichier
+        if (parseConfigFile("config/process.txt", &app->processes, &app->nb_processes) == -1) {
+            GtkWidget *error_dialog = gtk_message_dialog_new(
+                GTK_WINDOW(app->window),
+                GTK_DIALOG_MODAL,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "Erreur lors du rechargement du fichier"
+            );
+            gtk_dialog_run(GTK_DIALOG(error_dialog));
+            gtk_widget_destroy(error_dialog);
+            gtk_widget_destroy(dialog);
+            return;
+        }
+
+        printf("✅ %d processus rechargés\n", app->nb_processes);
+
+        // Régénérer les couleurs
+        generateProcessColors(app->processes, app->nb_processes);
+
+        // Message de succès
+        GtkWidget *success_dialog = gtk_message_dialog_new(
+            GTK_WINDOW(app->window),
+            GTK_DIALOG_MODAL,
+            GTK_MESSAGE_INFO,
+            GTK_BUTTONS_OK,
+            "Fichier généré avec succès!\n\n%d processus chargés.\n\nSélectionnez un algorithme pour visualiser.",
+            app->nb_processes
+        );
+        gtk_dialog_run(GTK_DIALOG(success_dialog));
+        gtk_widget_destroy(success_dialog);
+
+        // Réinitialiser l'affichage
+        if (app->current_data != NULL) {
+            if (app->current_data->list != NULL) {
+                listHistorics *current = app->current_data->list;
+                while (current != NULL) {
+                    listHistorics *temp = current;
+                    current = current->next;
+                    free(temp);
+                }
+            }
+            if (app->current_data->queueList != NULL) {
+                listQueueState *current = app->current_data->queueList;
+                while (current != NULL) {
+                    listQueueState *temp = current;
+                    current = current->next;
+                    free(temp);
+                }
+            }
+            free(app->current_data);
+            app->current_data = NULL;
+        }
+
+        // Exécuter FIFO automatiquement
+        printf("🎯 Exécution automatique de FIFO avec les nouveaux processus\n");
+        int fifo_index = -1;
+        for (int i = 0; i < app->algo_list.count; i++) {
+            if (strcmp(app->algo_list.algos[i].name, "fifo") == 0 ||
+                strcmp(app->algo_list.algos[i].name, "Fifo") == 0) {
+                fifo_index = i;
+                break;
+            }
+        }
+
+        if (fifo_index != -1) {
+            execute_algorithm(app, fifo_index);
+        } else {
+            // Si FIFO n'est pas trouvé, réinitialiser simplement
+            strcpy(app->current_algo_name, "");
+            gtk_label_set_text(GTK_LABEL(app->info_label),
+                              "👆 Sélectionnez un algorithme pour afficher le diagramme de Gantt");
+            gtk_widget_queue_draw(app->drawing_area);
+        }
+    }
+
+    gtk_widget_destroy(dialog);
+}
+
 // ===== Callback pour les boutons d'algorithmes =====
 
 void on_algorithm_button_clicked(GtkWidget *widget, gpointer data) {
@@ -440,15 +741,18 @@ void create_interface(AppData *app) {
     gtk_widget_set_halign(algo_label, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(main_vbox), algo_label, FALSE, FALSE, 5);
 
+    // Boîte horizontale pour les boutons d'algorithmes ET le bouton de génération
+    GtkWidget *button_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    gtk_box_pack_start(GTK_BOX(main_vbox), button_hbox, FALSE, FALSE, 5);
+
     // Boîte pour les boutons d'algorithmes
     app->algo_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    gtk_box_pack_start(GTK_BOX(main_vbox), app->algo_box, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(button_hbox), app->algo_box, FALSE, FALSE, 0);
 
     // Créer les boutons pour chaque algorithme
     for (int i = 0; i < app->algo_list.count; i++) {
         GtkWidget *button = gtk_button_new_with_label(app->algo_list.algos[i].display_name);
 
-        // Style CSS pour les boutons
         GtkStyleContext *context = gtk_widget_get_style_context(button);
         gtk_style_context_add_class(context, "suggested-action");
 
@@ -456,6 +760,18 @@ void create_interface(AppData *app) {
         g_signal_connect(button, "clicked", G_CALLBACK(on_algorithm_button_clicked), app);
         gtk_box_pack_start(GTK_BOX(app->algo_box), button, FALSE, FALSE, 0);
     }
+
+    // Spacer pour pousser le bouton de génération à droite
+    GtkWidget *spacer = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_pack_start(GTK_BOX(button_hbox), spacer, TRUE, TRUE, 0);
+
+    // Bouton de génération de fichier
+    GtkWidget *generate_button = gtk_button_new_with_label("📄 Générer nouveau fichier");
+    GtkStyleContext *gen_context = gtk_widget_get_style_context(generate_button);
+    gtk_style_context_add_class(gen_context, "destructive-action");
+    g_signal_connect(generate_button, "clicked", G_CALLBACK(on_generate_config_clicked), app);
+    gtk_box_pack_start(GTK_BOX(button_hbox), generate_button, FALSE, FALSE, 0);
+
 
     // Separator
     GtkWidget *separator2 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
@@ -554,5 +870,11 @@ void launch_gtk_interface(process *processes, int nb_processes,
     if (process_colors != NULL) {
         free(process_colors);
     }
+
+    // Libérer le tableau de processus
+    if (app->processes != NULL) {
+        free(app->processes);
+    }
+
     free(app);
 }

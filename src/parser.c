@@ -68,7 +68,7 @@ int generateConfigFile(const char *filename, int nbProcesses,
         return -1;
     }
 
-    fprintf(f, "# Fichier de configuration généré automatiquement\n");
+    // fprintf(f, "# Fichier de configuration généré automatiquement\n");
     fprintf(f, "# Format: nom, arrival_time, execution_time, priority\n\n");
 
     for (int i = 1; i <= nbProcesses; i++) {
