@@ -1,12 +1,28 @@
-# **Scheduler Simulator – User Guide**
+# Scheduler Simulator – User Guide
 
-## What is this?
+## Overview
+The Scheduler Simulator is a visual tool for simulating different CPU scheduling algorithms. It provides an interactive interface with Gantt chart visualization, process management, and performance metrics analysis.
 
-A visual tool to simulate CPU scheduling algorithms.
-See how different algorithms schedule processes with colorful Gantt charts!
+## Features
+
+- **Multiple Scheduling Algorithms:** FIFO, Round Robin, Priority, and Multilevel Queue
+- **Interactive Gantt Chart:** Visual representation of process execution timeline
+- **Process Table:** View all loaded processes with their attributes
+- **Performance Metrics:** Calculate waiting time and turnaround time
+- **Configuration Generator:** Automatically generate test cases
+
+## Prerequisites
+Before running the program, ensure you have the following installed:
+
+**Required Software**
+
+- **GCC Compiler** (version 7.0 or higher)
+- **GTK+ 3.0** development libraries
+- **pkg-config** utility
+- **Make** build tool
 
 ## Installation
-**Step 1: Install Requirements**
+**Step 1: Install Requirements on Different Systems**
 
 **Ubuntu/Debian**
 ```bash
@@ -22,20 +38,29 @@ sudo dnf install gcc make gtk3-devel pkg-config
 ```bash
 brew install gtk+3 pkg-config
 ```
-**Step 2: Build the Program**
+**Step 2: Clone or Download the Repository**
 ```bash
+git clone <repository-url>
 cd scheduler-simulator
+```
+**Step 3: Build the Program**
+```bash
+make clean
 make
 ```
+This will compile all source files and create an executable named `simulateur`.
 ## Running the Program
+**Basic Usage:** Run the simulator with the default configuration file:
 ```bash
 ./simulateur config/process.txt
 ```
+The program requires exactly one argument: the path to a configuration file.
 
 Or simply:
 ```bash
 make run
 ```
+This automatically runs `./simulateur config/process.txt`.
 ## How to Use
 **1. Start the Program**
 
@@ -55,9 +80,9 @@ For Round Robin / Multilevel:
 
 Click “Métriques” -> You can see:
 
-- waiting times
+- **waiting times (WT):** Time a process spends waiting in the ready queue `= Turnaround Time - Execution Time`
 
-- turnaround times
+- **turnaround times (TT):** Total time from arrival to completion `= Completion Time - Arrival Time`
 
 Lower numbers = better performance
 
