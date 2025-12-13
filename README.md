@@ -3,6 +3,9 @@
 ## Overview
 The Scheduler Simulator is a visual tool for simulating different CPU scheduling algorithms. It provides an interactive interface with Gantt chart visualization, process management, and performance metrics analysis.
 
+<img width="1300" height="736" alt="Screenshot from 2025-12-13 16-31-44" src="https://github.com/user-attachments/assets/05538b0b-0395-4eff-9bb9-90858b21ee97" />
+
+
 ## Features
 
 - **Multiple Scheduling Algorithms:** FIFO, Round Robin, Priority, and Multilevel Queue
@@ -76,6 +79,9 @@ For Round Robin / Multilevel:
 
 - enter quantum value (example: 3)
 
+<img width="361" height="226" alt="Screenshot from 2025-12-13 16-33-14" src="https://github.com/user-attachments/assets/d4950064-d062-4657-b37b-85c2e3d5d1ff" />
+
+
 **3. View Performance**
 
 Click “Métriques” -> You can see:
@@ -86,6 +92,9 @@ Click “Métriques” -> You can see:
 
 Lower numbers = better performance
 
+<img width="602" height="436" alt="Screenshot from 2025-12-13 16-32-09" src="https://github.com/user-attachments/assets/c544a762-4dbe-405f-9579-1b136cd9dd41" />
+
+
 **4. Generate New Tests**
 
 - Click “Générer fichier”
@@ -95,6 +104,9 @@ Lower numbers = better performance
 - Enter ranges
 
 - Click “Générer” to create a new test case
+
+<img width="474" height="472" alt="Screenshot from 2025-12-13 16-32-51" src="https://github.com/user-attachments/assets/259c5bbd-8a65-41b9-9768-53643dcdd68e" />
+
 
 ## Configuration File Format
 
@@ -133,7 +145,8 @@ Each process gets equal time slices (quantum)
 
 Good for interactive systems
 
-Recommended quantum: 2 → 5
+<img width="1295" height="383" alt="Screenshot from 2025-12-13 16-33-41" src="https://github.com/user-attachments/assets/d5227a87-7ad5-4752-b501-1f1d203636ae" />
+
 
 - **Priority**
 
